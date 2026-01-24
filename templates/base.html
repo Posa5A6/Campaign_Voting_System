@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Campaign Voting{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+{% block navbar %}
+<header class="topbar">
+    <div class="nav-wrapper">
+
+        <!-- LEFT -->
+        <div class="nav-left">
+            <a href="/" class="logo">
+                🗳 Campaign<span>Voting</span>
+            </a>
+            <a href="/" class="nav-item">Home</a>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="nav-right">
+            {% if user.is_authenticated %}
+                <span class="welcome">Hi, {{ user.username }}</span>
+
+                {% if user.is_staff %}
+                    <a href="/admin/dashboard/" class="nav-item">Dashboard</a>
+                {% else %}
+                    <a href="/campaigns-page/" class="nav-item">Campaigns</a>
+                    <a href="{% url 'edit_profile' %}" class="nav-item">Profile</a>
+                {% endif %}
+
+                <a href="{% url 'logout' %}" class="nav-btn logout-btn">Logout</a>
+            {% else %}
+                <a href="{% url 'register' %}" class="nav-item">Register</a>
+                <a href="{% url 'login' %}" class="nav-btn user-btn">User Login</a>
+                <a href="/admin/login/" class="nav-btn admin-btn">Admin Login</a>
+            {% endif %}
+        </div>
+
+    </div>
+</header>
+{% endblock %}
+<main>
+    {% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

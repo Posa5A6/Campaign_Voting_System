@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Register | Campaign Voting{% endblock %}
+
+{% block content %}
+<div class="register-page">
+
+    <!-- BACKGROUND BLOBS -->
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <div class="register-container">
+
+        <!-- LEFT CONTENT -->
+        <div class="register-info">
+            <h1>Join the Digital Voting Era</h1>
+            <p>
+                A secure, transparent, and modern campaign voting platform
+                designed for students and institutions.
+            </p>
+
+            <ul>
+                <li>🔒 Secure OTP-based verification</li>
+                <li>⚡ Fast & easy voting experience</li>
+                <li>📊 Transparent result declaration</li>
+            </ul>
+        </div>
+
+        <!-- RIGHT CARD -->
+        <div class="register-card">
+            <h2>Create Account</h2>
+            <p class="register-subtitle">
+                Register to participate in secure voting
+            </p>
+
+            <form id="registerForm" method="post" class="register-form">
+                {% csrf_token %}
+
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="email" name="email" placeholder="Email address" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <input type="text" name="full_name" placeholder="Full name" required>
+                <input type="text" name="roll_number" placeholder="Roll number" required>
+
+                <button type="submit">
+                    Register & Send OTP
+                </button>
+            </form>
+
+            <p class="register-footer">
+                Already registered?
+                <a href="{% url 'login' %}">Login</a>
+            </p>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/register.js' %}"></script>
+{% endblock %}

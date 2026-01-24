@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit Profile | Campaign Voting{% endblock %}
+
+{% block content %}
+<div class="edit-profile-page">
+
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <div class="edit-profile-container">
+
+        <!-- LEFT CONTENT -->
+        <div class="edit-profile-info">
+            <h1>Manage Your Profile</h1>
+            <p>
+                Update your details and secure your account.
+                Changing your email requires re-verification.
+            </p>
+
+            <ul>
+                <li>👤 Update personal information</li>
+                <li>📧 Email re-verification on change</li>
+                <li>🔐 Secure password update</li>
+                <li>🗳 Continued voting eligibility</li>
+            </ul>
+
+            <div class="edit-profile-note">
+                ⚠️ Changing your email will require OTP verification.
+            </div>
+        </div>
+
+        <!-- RIGHT CARD -->
+        <div class="edit-profile-card">
+
+            <h2>Edit Profile</h2>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <input type="email" name="email"
+                       value="{{ user.email }}"
+                       placeholder="Email address" required>
+
+                <input type="text" name="full_name"
+                       value="{{ profile.full_name }}"
+                       placeholder="Full name" required>
+
+                <hr>
+
+                <!-- PASSWORD CHANGE -->
+                <input type="password" name="old_password"
+                       placeholder="Current password">
+
+                <input type="password" name="new_password"
+                       placeholder="New password">
+
+                <input type="password" name="confirm_password"
+                       placeholder="Confirm new password">
+
+                <button type="submit">
+                    Save Changes
+                </button>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

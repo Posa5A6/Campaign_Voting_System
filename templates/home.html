@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Home | Campaign Voting{% endblock %}
+
+{% block content %}
+
+<!-- HERO SECTION -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+
+            <!-- TEXT -->
+            <div class="col-lg-6">
+                <h1 class="hero-title">
+                    Secure & Transparent <br>
+                    <span>Campaign Voting System</span>
+                </h1>
+
+                <p class="hero-text">
+                    A next-generation digital platform designed for secure,
+                    transparent, and trusted voting in academic and organizational campaigns.
+                </p>
+
+                <div class="hero-buttons">
+                    {% if not user.is_authenticated %}
+                        <a href="{% url 'register' %}" class="btn btn-primary btn-lg me-3">
+                            Get Started
+                        </a>
+                        <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">
+                            User Login
+                        </a>
+                    {% else %}
+                        <a href="/campaigns-page/" class="btn btn-success btn-lg">
+                            View Campaigns
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- IMAGE -->
+            <div class="col-lg-6 text-center">
+                <img src="{% static 'images/voting-hero.png' %}" class="hero-image" alt="Voting Illustration">
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-section">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <h2 class="section-title">Why Choose Our Platform?</h2>
+            <p class="section-subtitle">
+                Built with security, transparency, and simplicity in mind
+            </p>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="icon">🔒</div>
+                    <h5>Secure Voting</h5>
+                    <p>OTP verification and authenticated access ensure vote integrity.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="icon">⚡</div>
+                    <h5>Fast & Easy</h5>
+                    <p>Simple and user-friendly interface for all voters.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="icon">📊</div>
+                    <h5>Transparent Results</h5>
+                    <p>Results published only after official declaration.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+    <div class="container text-center">
+        <h2>Ready to Cast Your Vote?</h2>
+        <p>Join the digital democracy experience today.</p>
+
+        {% if not user.is_authenticated %}
+            <a href="{% url 'register' %}" class="btn btn-light btn-lg">
+                Register Now
+            </a>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

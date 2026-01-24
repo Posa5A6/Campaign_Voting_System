@@ -1,0 +1,207 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Candidates | Admin{% endblock %}
+{% block page_title %}Candidates{% endblock %}
+{% block page_subtitle %}Manage candidates for: <span class="text-dark fw-bold">{{ campaign.title }}</span>{% endblock %}
+
+{% block top_actions %}
+  <a href="{% url 'admin_campaigns' %}" class="btn btn-outline-dark fw-semibold">
+    <i class="bi bi-arrow-left me-1"></i> Back
+  </a>
+
+  <a href="{% url 'add_candidate' campaign.id %}" class="btn btn-primary fw-semibold">
+    <i class="bi bi-plus-lg me-1"></i> Add Candidate
+  </a>
+
+  <a href="{% url 'admin_results' campaign.id %}" class="btn btn-outline-primary fw-semibold">
+    <i class="bi bi-graph-up-arrow me-1"></i> Results
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+
+  <!-- LEFT: CAMPAIGN SUMMARY -->
+  <div class="col-lg-4">
+    <div class="admin-glass p-4 rounded-4 shadow-sm">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="admin-icon-badge">
+          <i class="bi bi-people-fill"></i>
+        </div>
+        <div>
+          <div class="fw-bold fs-5">Campaign Summary</div>
+          <div class="text-secondary small">Quick info & actions</div>
+        </div>
+      </div>
+
+      <div class="admin-kv">
+        <div class="admin-k">Title</div>
+        <div class="admin-v fw-semibold">{{ campaign.title }}</div>
+      </div>
+
+      <div class="admin-kv">
+        <div class="admin-k">Description</div>
+        <div class="admin-v text-secondary">{{ campaign.description|truncatechars:120 }}</div>
+      </div>
+
+      <div class="admin-kv">
+        <div class="admin-k">Time Window</div>
+        <div class="admin-v small text-secondary">
+          <i class="bi bi-calendar-event me-1"></i>{{ campaign.start_date|date:"M d, Y H:i" }}<br>
+          <i class="bi bi-calendar2-check me-1"></i>{{ campaign.end_date|date:"M d, Y H:i" }}
+        </div>
+      </div>
+
+      <div class="admin-kv">
+        <div class="admin-k">Candidates</div>
+        <div class="admin-v">
+          <span class="badge rounded-pill text-bg-dark">{{ candidates|length }}</span>
+        </div>
+      </div>
+
+      <div class="admin-note mt-3">
+        <i class="bi bi-info-circle me-2"></i>
+        Tip: Add candidate name + party clearly (it will show to voters).
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: CANDIDATES LIST -->
+  <div class="col-lg-8">
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+          <div>
+            <h5 class="fw-bold mb-1">Candidates List</h5>
+            <p class="text-secondary mb-0">Search, review, and manage candidates.</p>
+          </div>
+
+          <div class="admin-search">
+            <i class="bi bi-search"></i>
+            <input id="candidateSearch" type="text" placeholder="Search candidate or party...">
+          </div>
+        </div>
+
+        <!-- GRID CARDS -->
+        <div class="row g-3" id="candidateGrid">
+
+          {% for c in candidates %}
+          <div class="col-md-6 candidate-item">
+            <div class="candidate-card h-100">
+              <div class="d-flex align-items-start justify-content-between gap-3">
+                <div>
+                  <div class="candidate-name">{{ c.name }}</div>
+                  <div class="candidate-party">
+                    <i class="bi bi-flag-fill me-1"></i>{{ c.party }}
+                  </div>
+                </div>
+
+                <button
+                  class="btn btn-sm btn-danger fw-semibold"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteCandidateModal"
+                  data-id="{{ c.id }}"
+                  data-name="{{ c.name|escape }}"
+                >
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+
+              <div class="candidate-footer mt-3">
+                <span class="badge rounded-pill text-bg-light border">
+                  <i class="bi bi-person-check me-1"></i> Candidate
+                </span>
+
+                <a class="btn btn-sm btn-outline-primary fw-semibold"
+                   href="{% url 'admin_results' campaign.id %}">
+                  <i class="bi bi-graph-up-arrow me-1"></i> Votes
+                </a>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-12">
+            <div class="text-center text-secondary py-5">
+              <div class="display-6">👀</div>
+              <div class="fw-bold mt-2">No candidates found</div>
+              <div class="small">Add candidates to start voting.</div>
+            </div>
+          </div>
+          {% endfor %}
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DELETE CANDIDATE MODAL -->
+<div class="modal fade" id="deleteCandidateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">Delete Candidate</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body pt-2">
+        <p class="text-secondary mb-2">You are about to delete:</p>
+        <div class="p-3 rounded-3 bg-light border">
+          <div class="fw-semibold" id="deleteCandidateName">Candidate</div>
+          <div class="text-secondary small">This action cannot be undone.</div>
+        </div>
+      </div>
+
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary fw-semibold" data-bs-dismiss="modal">
+          Cancel
+        </button>
+
+        <!-- You need a delete_candidate view + url for this -->
+        <form method="post" id="deleteCandidateForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger fw-semibold">
+            <i class="bi bi-trash3 me-1"></i> Delete
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Search filter
+  const searchInput = document.getElementById("candidateSearch");
+  const items = document.querySelectorAll(".candidate-item");
+
+  searchInput?.addEventListener("input", () => {
+    const q = searchInput.value.toLowerCase().trim();
+    items.forEach(item => {
+      const text = item.innerText.toLowerCase();
+      item.style.display = text.includes(q) ? "" : "none";
+    });
+  });
+
+  // Delete modal setup
+  const modal = document.getElementById("deleteCandidateModal");
+  modal?.addEventListener("show.bs.modal", (event) => {
+    const btn = event.relatedTarget;
+    const id = btn.getAttribute("data-id");
+    const name = btn.getAttribute("data-name");
+
+    document.getElementById("deleteCandidateName").innerText = name;
+
+    // IMPORTANT: set to your delete candidate URL
+    // Example URL we will add: /admin-panel/candidates/delete/<id>/
+    const form = document.getElementById("deleteCandidateForm");
+    form.action = `/admin/candidates/delete/${id}/`;
+  });
+</script>
+
+{% endblock %}

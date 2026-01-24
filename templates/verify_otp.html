@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Verify Email | Campaign Voting{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<div class="otp-layout">
+
+    <!-- BACKGROUND BLOBS -->
+    <div class="otp-blob blob-1"></div>
+    <div class="otp-blob blob-2"></div>
+
+    <div class="otp-container">
+
+        <!-- LEFT CONTENT -->
+        <div class="otp-info-panel">
+            <h1>Email Verification</h1>
+            <p>
+                To protect the integrity of the voting system, we verify
+                every user through a secure OTP-based email validation.
+            </p>
+
+            <ul>
+                <li>🔐 Secure one-time verification</li>
+                <li>📧 Sent directly to your email</li>
+                <li>⚡ Quick & seamless activation</li>
+                <li>🗳 Required for campaign participation</li>
+            </ul>
+
+            <div class="otp-note">
+                ℹ️ Didn’t receive the OTP? You can resend it or update
+                your email address below.
+            </div>
+        </div>
+
+        <!-- RIGHT CARD -->
+        <div class="otp-card">
+
+            <div class="otp-icon">📧</div>
+
+            <h2>Enter OTP</h2>
+            <p class="otp-subtitle">
+                Enter the 6-digit code sent to your email
+            </p>
+
+            <!-- OTP FORM -->
+            <form method="post" action="{% url 'verify_otp' %}" class="otp-form">
+                {% csrf_token %}
+                <input
+                    type="text"
+                    name="otp"
+                    maxlength="6"
+                    placeholder="••••••"
+                    required
+                >
+                <button type="submit">
+                    Verify & Continue
+                </button>
+            </form>
+
+            <!-- DJANGO MESSAGES -->
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="otp-message">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <!-- RESEND -->
+            <div class="otp-resend">
+                <span id="timer">Resend available in 60s</span>
+                <form method="post" action="{% url 'resend_otp' %}">
+                    {% csrf_token %}
+                    <button id="resendBtn" disabled type="submit">
+                        Resend OTP
+                    </button>
+                </form>
+            </div>
+
+            <!-- UPDATE EMAIL -->
+            <div class="otp-edit-email">
+                <form method="post" action="{% url 'update_email_otp' %}">
+                    {% csrf_token %}
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="Change email address"
+                        required
+                    >
+                    <button type="submit">
+                        Update Email & Send OTP
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+let timeLeft = 60;
+const timer = document.getElementById("timer");
+const resendBtn = document.getElementById("resendBtn");
+
+const interval = setInterval(() => {
+    timeLeft--;
+    timer.innerText = `Resend available in ${timeLeft}s`;
+
+    if (timeLeft <= 0) {
+        clearInterval(interval);
+        resendBtn.disabled = false;
+        timer.innerText = "You can resend OTP now";
+    }
+}, 1000);
+</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Candidates{% endblock %}
+
+{% block content %}
+<h2>Candidates</h2>
+
+<div id="candidateList" data-campaign-id="{{ campaign_id }}">
+    Loading candidates...
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/candidates.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,289 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Campaigns | Admin{% endblock %}
+{% block page_title %}Campaigns{% endblock %}
+{% block page_subtitle %}Create, monitor, and manage campaigns in one place{% endblock %}
+{% block nav_campaigns %}active{% endblock %}
+
+{% block top_actions %}
+  <a href="{% url 'create_campaign' %}" class="btn btn-primary fw-semibold admin-primary-btn">
+    <i class="bi bi-plus-lg me-1"></i> Create Campaign
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="admin-campaigns-head card border-0 shadow-sm rounded-4 mb-4">
+  <div class="card-body p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div>
+        <h5 class="fw-bold mb-1">All Campaigns</h5>
+        <p class="text-secondary mb-0">Search campaigns and manage candidates & results.</p>
+      </div>
+
+      <div class="admin-campaigns-controls">
+        <div class="admin-search">
+          <i class="bi bi-search"></i>
+          <input id="campaignSearch" type="text" placeholder="Search by title or description...">
+        </div>
+
+        <div class="admin-filter-chips" id="filterChips">
+          <button class="chip active" data-filter="all">All</button>
+          <button class="chip" data-filter="live">Live</button>
+          <button class="chip" data-filter="upcoming">Upcoming</button>
+          <button class="chip" data-filter="ended">Ended</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="admin-campaign-grid" id="campaignGrid">
+
+  {% for c in campaigns %}
+  <div class="admin-campaign-card campaign-row"
+       data-title="{{ c.title|lower }}"
+       data-desc="{{ c.description|lower }}"
+       data-status="{% if c.start_date > now %}upcoming{% elif c.end_date < now %}ended{% else %}live{% endif %}">
+
+    <!-- TOP -->
+    <div class="campaign-top">
+      <div class="campaign-badges">
+        {% if c.start_date > now %}
+          <span class="badge rounded-pill text-bg-warning">
+            <i class="bi bi-hourglass-split me-1"></i> Upcoming
+          </span>
+        {% elif c.end_date < now %}
+          <span class="badge rounded-pill text-bg-dark">
+            <i class="bi bi-flag-checkered me-1"></i> Ended
+          </span>
+        {% else %}
+          <span class="badge rounded-pill text-bg-success">
+            <i class="bi bi-broadcast me-1"></i> Live
+          </span>
+        {% endif %}
+
+        {% if c.is_active %}
+          <span class="badge rounded-pill text-bg-primary">Active</span>
+        {% else %}
+          <span class="badge rounded-pill text-bg-secondary">Inactive</span>
+        {% endif %}
+      </div>
+
+      <!-- More menu -->
+      <div class="campaign-kebab dropdown">
+        <button class="btn btn-sm btn-light border dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-three-dots-vertical"></i>
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <a class="dropdown-item" href="{% url 'admin_candidates' c.id %}">
+              <i class="bi bi-people me-2"></i> Candidates
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{% url 'admin_results' c.id %}">
+              <i class="bi bi-graph-up-arrow me-2"></i> Results
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <!-- Open modal -->
+            <button
+              type="button"
+              class="dropdown-item text-danger fw-semibold"
+              data-bs-toggle="modal"
+              data-bs-target="#deleteCampaignModal"
+              data-campaign-id="{{ c.id }}"
+              data-campaign-title="{{ c.title }}"
+              data-campaign-desc="{{ c.description|default:''|escapejs }}"
+              data-campaign-start="{{ c.start_date|date:'M d, Y H:i' }}"
+              data-campaign-end="{{ c.end_date|date:'M d, Y H:i' }}"
+            >
+              <i class="bi bi-trash3 me-2"></i> Delete Campaign
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- TITLE -->
+    <div class="campaign-title">
+      <h3>{{ c.title }}</h3>
+      <p>{{ c.description|truncatechars:120 }}</p>
+    </div>
+
+    <!-- DATES -->
+    <div class="campaign-dates">
+      <div class="date-box">
+        <div class="date-k">Start</div>
+        <div class="date-v">{{ c.start_date|date:"M d, Y H:i" }}</div>
+      </div>
+
+      <div class="date-box">
+        <div class="date-k">End</div>
+        <div class="date-v">{{ c.end_date|date:"M d, Y H:i" }}</div>
+      </div>
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="campaign-actions">
+      <a href="{% url 'admin_candidates' c.id %}" class="btn btn-outline-primary fw-semibold">
+        <i class="bi bi-people me-1"></i> Candidates
+      </a>
+
+      <a href="{% url 'admin_results' c.id %}" class="btn btn-outline-dark fw-semibold">
+        <i class="bi bi-graph-up-arrow me-1"></i> Results
+      </a>
+
+      <!-- clean delete button (also opens modal) -->
+      <button
+        type="button"
+        class="btn btn-outline-danger fw-semibold"
+        data-bs-toggle="modal"
+        data-bs-target="#deleteCampaignModal"
+        data-campaign-id="{{ c.id }}"
+        data-campaign-title="{{ c.title }}"
+        data-campaign-desc="{{ c.description|default:''|escapejs }}"
+        data-campaign-start="{{ c.start_date|date:'M d, Y H:i' }}"
+        data-campaign-end="{{ c.end_date|date:'M d, Y H:i' }}"
+      >
+        <i class="bi bi-trash3 me-1"></i> Delete
+      </button>
+    </div>
+
+  </div>
+  {% empty %}
+  <div class="admin-empty">
+    <div class="display-6">📭</div>
+    <div class="fw-bold mt-2">No campaigns found</div>
+    <div class="text-secondary">Create your first campaign to start voting.</div>
+    <a href="{% url 'create_campaign' %}" class="btn btn-primary fw-semibold mt-3">
+      <i class="bi bi-plus-lg me-1"></i> Create Campaign
+    </a>
+  </div>
+  {% endfor %}
+
+</div>
+
+<!-- ✅ PREMIUM DELETE MODAL -->
+<div class="modal fade" id="deleteCampaignModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content admin-modal">
+
+      <div class="modal-header border-0 pb-0">
+        <div class="d-flex align-items-center gap-3">
+          <div class="admin-modal-icon">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold mb-0">Delete Campaign?</h5>
+            <div class="text-secondary small">This action cannot be undone.</div>
+          </div>
+        </div>
+
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body pt-3">
+        <div class="admin-modal-card">
+          <div class="fw-bold" id="delTitle">—</div>
+          <div class="text-secondary small mt-1" id="delDesc">—</div>
+
+          <div class="admin-modal-meta mt-3">
+            <div class="meta-row">
+              <span class="meta-k">Start</span>
+              <span class="meta-v" id="delStart">—</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-k">End</span>
+              <span class="meta-v" id="delEnd">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-modal-warning mt-3">
+          <i class="bi bi-info-circle me-2"></i>
+          Deleting this campaign will remove all its candidates and vote data (if linked by DB rules).
+        </div>
+      </div>
+
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light fw-semibold" data-bs-dismiss="modal">
+          Cancel
+        </button>
+
+        <form method="post" id="deleteForm" action="#">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger fw-semibold admin-danger-btn">
+            Yes, Delete
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // Search + filter
+  document.addEventListener("DOMContentLoaded", () => {
+    const search = document.getElementById("campaignSearch");
+    const chips = document.querySelectorAll(".chip");
+    const rows = document.querySelectorAll(".campaign-row");
+
+    let currentFilter = "all";
+
+    function applyFilter(){
+      const q = (search?.value || "").toLowerCase().trim();
+
+      rows.forEach(r => {
+        const title = r.dataset.title || "";
+        const desc = r.dataset.desc || "";
+        const status = r.dataset.status || "all";
+
+        const matchText = (title + " " + desc).includes(q);
+        const matchStatus = (currentFilter === "all") || (status === currentFilter);
+
+        r.style.display = (matchText && matchStatus) ? "" : "none";
+      });
+    }
+
+    search?.addEventListener("input", applyFilter);
+
+    chips.forEach(ch => {
+      ch.addEventListener("click", () => {
+        chips.forEach(x => x.classList.remove("active"));
+        ch.classList.add("active");
+        currentFilter = ch.dataset.filter;
+        applyFilter();
+      });
+    });
+
+    // Modal content populate
+    const modal = document.getElementById("deleteCampaignModal");
+    modal?.addEventListener("show.bs.modal", (event) => {
+      const btn = event.relatedTarget;
+
+      const id = btn.getAttribute("data-campaign-id");
+      const title = btn.getAttribute("data-campaign-title");
+      const desc = btn.getAttribute("data-campaign-desc") || "";
+      const start = btn.getAttribute("data-campaign-start");
+      const end = btn.getAttribute("data-campaign-end");
+
+      document.getElementById("delTitle").innerText = title;
+      document.getElementById("delDesc").innerText = desc || "No description provided.";
+      document.getElementById("delStart").innerText = start;
+      document.getElementById("delEnd").innerText = end;
+
+      // IMPORTANT: your delete url is not named, so use direct path:
+      // path("campaigns/delete/<int:campaign_id>/", views_admin.delete_campaign),
+      const form = document.getElementById("deleteForm");
+      form.action = `/admin/campaigns/delete/${id}/`;
+    });
+  });
+</script>
+
+{% endblock %}

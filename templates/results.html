@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Results{% endblock %}
+
+{% block content %}
+<h2 class="results-title">Election Results</h2>
+
+<div id="results"
+     class="results-container"
+     data-campaign-id="{{ campaign_id }}">
+    <p class="loading">Loading results...</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/results.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admin Login | Campaign Voting{% endblock %}
+
+{% block content %}
+<div class="admin-auth-page">
+
+    <div class="admin-container">
+
+        <!-- LEFT POWER CONTENT -->
+        <div class="admin-info">
+            <h1>System Control Panel</h1>
+            <p>
+                This portal provides administrators with full authority
+                to manage campaigns, monitor voting activity, and publish
+                official results.
+            </p>
+
+            <ul>
+                <li>🗳 Manage campaigns & candidates</li>
+                <li>📊 Monitor live voting statistics</li>
+                <li>🔐 Approve & verify user access</li>
+                <li>📢 Declare official results</li>
+            </ul>
+
+            <div class="admin-warning">
+                ⚠️ Unauthorized access is strictly prohibited.
+                All activities are logged and monitored.
+            </div>
+        </div>
+
+        <!-- RIGHT LOGIN CARD -->
+        <div class="admin-auth-card">
+
+            <div class="admin-badge">ADMIN ACCESS</div>
+
+            <h2>Administrator Login</h2>
+            <p class="admin-subtitle">
+                Authorized personnel only
+            </p>
+
+            <form method="post" class="admin-auth-form">
+                {% csrf_token %}
+
+                <input type="text" name="username" placeholder="Admin username" required>
+                <input type="password" name="password" placeholder="Password" required>
+
+                <button type="submit" class="admin-btn">
+                    Secure Login
+                </button>
+            </form>
+
+            {% if error %}
+                <div class="admin-error">{{ error }}</div>
+            {% endif %}
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}

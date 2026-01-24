@@ -1,0 +1,495 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Results | Admin{% endblock %}
+{% block page_title %}Results{% endblock %}
+{% block page_subtitle %}Results for: <span class="text-dark fw-bold">{{ campaign.title }}</span>{% endblock %}
+{% block nav_campaigns %}active{% endblock %}
+
+{% block top_actions %}
+  <a href="{% url 'admin_campaigns' %}" class="btn btn-outline-dark fw-semibold">
+    <i class="bi bi-arrow-left me-1"></i> Back
+  </a>
+
+  <a href="{% url 'admin_candidates' campaign.id %}" class="btn btn-outline-primary fw-semibold">
+    <i class="bi bi-people me-1"></i> Candidates
+  </a>
+
+  {% if ended %}
+    <button class="btn btn-outline-success fw-semibold" onclick="openPrint('certificate')">
+      <i class="bi bi-award me-1"></i> Print Winner Certificate
+    </button>
+
+    <button class="btn btn-outline-secondary fw-semibold" onclick="openPrint('report')">
+      <i class="bi bi-printer me-1"></i> Print Full Report
+    </button>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+
+  <!-- LEFT SUMMARY -->
+  <div class="col-lg-4">
+    <div class="admin-glass p-4 rounded-4 shadow-sm">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="admin-icon-badge"><i class="bi bi-graph-up-arrow"></i></div>
+        <div>
+          <div class="fw-bold fs-5">Result Summary</div>
+          <div class="text-secondary small">Campaign overview</div>
+        </div>
+      </div>
+
+      <div class="admin-kv">
+        <div class="admin-k">Campaign</div>
+        <div class="admin-v fw-semibold">{{ campaign.title }}</div>
+      </div>
+
+      <div class="admin-kv">
+        <div class="admin-k">Start</div>
+        <div class="admin-v small text-secondary">{{ campaign.start_date|date:"M d, Y H:i" }}</div>
+      </div>
+
+      <div class="admin-kv">
+        <div class="admin-k">End</div>
+        <div class="admin-v small text-secondary">{{ campaign.end_date|date:"M d, Y H:i" }}</div>
+      </div>
+
+      <div class="admin-kv">
+        <div class="admin-k">Status</div>
+        <div class="admin-v">
+          {% if ended %}
+            <span class="badge rounded-pill text-bg-dark">Ended</span>
+          {% else %}
+            <span class="badge rounded-pill text-bg-success">Live</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="admin-note mt-3">
+        <i class="bi bi-shield-check me-2"></i>
+        Results are shown only after campaign end time (server validated).
+      </div>
+
+      {% if ended and results %}
+        {% with winner=results.0 %}
+        <div class="admin-winner-card mt-4">
+          <div class="winner-chip">🏆 Winner</div>
+          <div class="winner-name">{{ winner.name }}</div>
+          <div class="winner-party text-secondary">{{ winner.party }}</div>
+          <div class="winner-votes"><span class="fw-bold">{{ winner.total_votes }}</span> votes</div>
+        </div>
+        {% endwith %}
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- RIGHT RESULTS -->
+  <div class="col-lg-8">
+
+    {% if not ended %}
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4 p-lg-5 text-center">
+          <div class="display-4">🔒</div>
+          <h4 class="fw-bold mt-2">Results are locked</h4>
+          <p class="text-secondary mb-0">Results will be available automatically after the campaign ends.</p>
+          <div class="admin-lock-box mt-4">
+            <div class="text-secondary small">Campaign ends at</div>
+            <div class="fw-bold">{{ campaign.end_date|date:"M d, Y H:i" }}</div>
+          </div>
+        </div>
+      </div>
+
+    {% else %}
+
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+
+          {% if results|length == 0 %}
+            <div class="text-center text-secondary py-5">
+              <div class="display-6">📭</div>
+              <div class="fw-bold mt-2">No candidates / no votes yet</div>
+              <div class="small">Add candidates and run campaign to see results.</div>
+            </div>
+          {% else %}
+
+            {% with top=results.0.total_votes %}
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div>
+                  <h5 class="fw-bold mb-1">Final Results</h5>
+                  <p class="text-secondary mb-0">Ranked by total votes.</p>
+                </div>
+
+                {% if results|length > 1 and results.1.total_votes == top %}
+                  <span class="badge rounded-pill text-bg-warning">
+                    <i class="bi bi-exclamation-triangle me-1"></i> TIE for #1
+                  </span>
+                {% else %}
+                  <span class="badge rounded-pill text-bg-success">
+                    <i class="bi bi-award me-1"></i> Winner Declared
+                  </span>
+                {% endif %}
+              </div>
+
+              <div class="admin-results-list" id="adminResultsList">
+
+                {% for r in results %}
+                <div class="admin-result-row {% if forloop.counter == 1 %}is-winner{% endif %}" data-votes="{{ r.total_votes }}">
+                  <div class="admin-rank">
+                    {% if forloop.counter == 1 %}<span class="rank-medal">🥇</span>
+                    {% elif forloop.counter == 2 %}<span class="rank-medal">🥈</span>
+                    {% elif forloop.counter == 3 %}<span class="rank-medal">🥉</span>
+                    {% else %}<span class="rank-num">#{{ forloop.counter }}</span>
+                    {% endif %}
+                  </div>
+
+                  <div class="admin-result-main">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                      <div>
+                        <div class="admin-cand-name">{{ r.name }}</div>
+                        <div class="admin-cand-party text-secondary small">
+                          <i class="bi bi-flag-fill me-1"></i>{{ r.party }}
+                        </div>
+                      </div>
+
+                      <div class="admin-vote-pill">
+                        <i class="bi bi-check2-circle me-1"></i>
+                        <span class="fw-bold">{{ r.total_votes }}</span> votes
+                      </div>
+                    </div>
+
+                    <div class="admin-bar-wrap mt-3">
+                      <div class="admin-bar"></div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+
+              </div>
+            {% endwith %}
+
+          {% endif %}
+        </div>
+      </div>
+
+      <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          const rows = Array.from(document.querySelectorAll(".admin-result-row"));
+          const maxVotes = rows.reduce((m, el) => Math.max(m, parseInt(el.dataset.votes || "0", 10)), 0);
+
+          rows.forEach((row) => {
+            const votes = parseInt(row.dataset.votes || "0", 10);
+            const percent = maxVotes ? Math.round((votes / maxVotes) * 100) : 0;
+            const bar = row.querySelector(".admin-bar");
+            if (!bar) return;
+            bar.style.width = "0%";
+            requestAnimationFrame(() => { bar.style.width = percent + "%"; });
+          });
+        });
+      </script>
+
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- =========================
+     HIDDEN PRINT TEMPLATES
+     ========================= -->
+{% if ended and results %}
+
+<!-- CERTIFICATE TEMPLATE -->
+<div id="certificateTemplate" style="display:none;">
+  {% with winner=results.0 %}
+  <div class="pwrap">
+    <div class="sheet cert">
+      <div class="wm"></div>
+
+      <div class="head">
+        <div class="logo">
+          <img src="{% static 'images/college-logo.png' %}" alt="Logo">
+        </div>
+        <div class="headText">
+          <div class="title">{{ campaign.title }}</div>
+          <div class="sub">Official Winner Certificate</div>
+          <div class="doc">CERTIFICATE OF WINNING</div>
+        </div>
+        <div class="qr">
+          <div id="qrCertBox"></div>
+          <div class="qrTxt">Verify Campaign</div>
+          <div class="qrTxt small">ID: {{ campaign.id }}</div>
+        </div>
+      </div>
+
+      <div class="rule"></div>
+
+      <div class="letter">
+        <div class="lh">Appreciation Letter</div>
+        <p>
+          This letter is issued to appreciate the successful completion of the election conducted under
+          <b>{{ campaign.title }}</b>. The process was carried out with transparency and integrity using the
+          Campaign Voting System.
+        </p>
+        <p>
+          We hereby congratulate <b>{{ winner.name }}</b> ({{ winner.party }}) for securing the highest number of votes
+          and being declared as the official winner.
+        </p>
+      </div>
+
+      <div class="certBox">
+        <div class="chip">🏆 WINNER CERTIFICATE</div>
+        <div class="wname">{{ winner.name }}</div>
+        <div class="wparty">{{ winner.party }}</div>
+
+        <div class="meta">
+          <div><span>Campaign ID</span><b>{{ campaign.id }}</b></div>
+          <div><span>Total Votes</span><b>{{ winner.total_votes }}</b></div>
+          <div><span>Campaign Period</span><b>{{ campaign.start_date|date:"M d, Y" }} → {{ campaign.end_date|date:"M d, Y" }}</b></div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <div class="sig">
+          <div class="line"></div>
+          <div class="sigT">Campaign Voting Administrator</div>
+          <div class="sigN">{{ request.user.username }}</div>
+        </div>
+        <div class="issued">
+          <div class="ik">Issued On</div>
+          <div class="iv">{% now "M d, Y H:i" %}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+</div>
+
+<!-- REPORT TEMPLATE -->
+<div id="reportTemplate" style="display:none;">
+  <div class="pwrap">
+    <div class="sheet report">
+      <div class="rhead">
+        <div>
+          <div class="rtitle">Official Election Report</div>
+          <div class="rsub">
+            Campaign: <b>{{ campaign.title }}</b><br>
+            Period: {{ campaign.start_date|date:"M d, Y H:i" }} → {{ campaign.end_date|date:"M d, Y H:i" }}<br>
+            Generated: {% now "M d, Y H:i" %} • Administrator: <b>{{ request.user.username }}</b>
+          </div>
+        </div>
+        <div class="stamp">OFFICIAL</div>
+      </div>
+
+      <div class="rletter">
+        <div class="lh">Report Summary Letter</div>
+        <p>
+          This report is generated after the campaign end time. It contains final winner details,
+          participation details, and vote distribution analysis.
+        </p>
+      </div>
+
+      <div class="stats">
+        <div class="sc"><div class="k">Total Candidates</div><div class="v">{{ results|length }}</div></div>
+        <div class="sc"><div class="k">Total Votes</div><div class="v" id="rpTotalVotes">0</div></div>
+        <div class="sc"><div class="k">Winner</div><div class="v">{{ results.0.name }}</div></div>
+      </div>
+
+      <div class="chart">
+        <div class="ct">Vote Distribution (Pie Chart)</div>
+        <canvas id="rpPie" width="520" height="260"></canvas>
+      </div>
+
+      <div class="section">
+        <div class="stitle">Participants (Candidates)</div>
+        <div class="plist">
+          {% for c in results %}
+            <div class="pitem">
+              <div class="pn"><b>{{ c.name }}</b></div>
+              <div class="pp text-secondary small">{{ c.party }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <table class="rtbl" id="rpTable">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Candidate</th>
+            <th>Party</th>
+            <th>Votes</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in results %}
+          <tr data-name="{{ c.name }}" data-party="{{ c.party }}" data-votes="{{ c.total_votes }}">
+            <td>{{ forloop.counter }}</td>
+            <td><b>{{ c.name }}</b></td>
+            <td>{{ c.party }}</td>
+            <td><b>{{ c.total_votes }}</b></td>
+            <td class="pct">-</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="rfoot">
+        <div>
+          <div class="k">Prepared By</div>
+          <div class="v">Campaign Voting Administrator</div>
+          <div class="v small text-secondary">{{ request.user.username }}</div>
+        </div>
+        <div class="rsig">
+          <div class="line"></div>
+          <div class="k">Signature</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+  function openPrint(type){
+    const src = document.getElementById(type === "certificate" ? "certificateTemplate" : "reportTemplate");
+    if(!src) return;
+
+    const w = window.open("", "_blank");
+    const css = `
+      <style>
+        @page { size: A4; margin: 14mm; }
+        body { margin:0; font-family: Arial, Helvetica, sans-serif; background:#fff; color:#0b1220; }
+        .pwrap { padding: 0; }
+        .sheet { width: 100%; }
+        /* ===== Certificate styles ===== */
+        .cert { position: relative; border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; overflow:hidden; }
+        .wm { position:absolute; inset:0; opacity:.06; background: radial-gradient(circle at 20% 20%, #2563eb, transparent 50%), radial-gradient(circle at 80% 70%, #22d3ee, transparent 55%), radial-gradient(circle at 50% 50%, #111827, transparent 65%); }
+        .head { position: relative; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+        .logo img { width:72px; height:72px; object-fit:contain; }
+        .headText { text-align:center; flex:1; }
+        .title { font-size: 20px; font-weight: 800; letter-spacing: .4px; }
+        .sub { font-size: 12px; color:#334155; margin-top:2px; }
+        .doc { margin-top: 10px; font-size: 13px; font-weight: 800; letter-spacing: 1.6px; color:#0f172a; }
+        .qr { width: 130px; text-align:center; }
+        .qrTxt { font-size: 11px; margin-top:6px; }
+        .rule { height: 1px; background: linear-gradient(90deg, transparent, #cbd5e1, transparent); margin: 14px 0; position:relative; z-index:2;}
+        .letter { position:relative; z-index:2; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:14px; }
+        .lh { font-weight: 800; margin-bottom: 6px; }
+        .letter p { margin: 0 0 8px 0; font-size: 12px; line-height: 1.6; color:#0f172a; }
+        .certBox { position:relative; z-index:2; margin-top: 12px; border: 1px solid rgba(37,99,235,.22); background: linear-gradient(135deg, rgba(37,99,235,.10), rgba(34,211,238,.08)); border-radius: 16px; padding: 16px; }
+        .chip { display:inline-block; font-size:11px; font-weight:900; letter-spacing:1px; padding:6px 10px; border-radius: 999px; background:#0f172a; color:#fff; margin-bottom:10px; }
+        .wname { font-size: 22px; font-weight: 900; }
+        .wparty { margin-top: 4px; color:#334155; font-weight:700; }
+        .meta { margin-top: 12px; display:grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; }
+        .meta div { background:#fff; border:1px solid #e2e8f0; border-radius: 12px; padding:10px; }
+        .meta span { display:block; color:#64748b; font-size:11px; margin-bottom:3px; }
+        .foot { position:relative; z-index:2; margin-top: 16px; display:flex; justify-content:space-between; align-items:flex-end; gap:18px; }
+        .sig .line { width: 220px; height:1px; background:#0f172a; margin-bottom: 6px; }
+        .sigT { font-weight: 800; font-size: 12px; }
+        .sigN { font-size: 12px; color:#334155; }
+        .issued { text-align:right; }
+        .ik { font-size: 11px; color:#64748b; }
+        .iv { font-weight: 800; font-size: 12px; }
+        /* ===== Report styles ===== */
+        .report { border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; }
+        .rhead { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+        .rtitle { font-size: 18px; font-weight: 900; }
+        .rsub { font-size: 12px; color:#334155; line-height: 1.55; margin-top:6px; }
+        .stamp { font-weight: 900; letter-spacing: 2px; color:#fff; background:#0f172a; padding: 8px 12px; border-radius: 12px; }
+        .rletter { margin-top: 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius: 14px; padding: 12px; }
+        .rletter p { margin:0; font-size: 12px; line-height: 1.6; }
+        .stats { margin-top: 12px; display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .sc { background:#fff; border:1px solid #e2e8f0; border-radius: 14px; padding: 12px; }
+        .sc .k { font-size: 11px; color:#64748b; }
+        .sc .v { font-size: 16px; font-weight: 900; margin-top:4px; }
+        .chart { margin-top: 14px; border:1px solid #e2e8f0; border-radius: 14px; padding: 12px; }
+        .ct { font-weight: 900; margin-bottom: 8px; }
+        .section { margin-top: 14px; }
+        .stitle { font-weight: 900; margin-bottom: 8px; }
+        .plist { display:grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .pitem { border:1px solid #e2e8f0; border-radius: 12px; padding: 10px; background:#fff; }
+        .rtbl { width:100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+        .rtbl th, .rtbl td { border:1px solid #e2e8f0; padding: 8px; text-align:left; }
+        .rtbl th { background:#0f172a; color:#fff; }
+        .rfoot { margin-top: 14px; display:flex; justify-content:space-between; align-items:flex-end; gap:14px; }
+        .rsig .line { width: 220px; height:1px; background:#0f172a; margin-bottom: 6px; }
+      </style>
+    `;
+
+    w.document.open();
+    w.document.write(`
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>${type === "certificate" ? "Winner Certificate" : "Election Report"}</title>
+          ${css}
+        </head>
+        <body>
+          ${src.innerHTML}
+        </body>
+      </html>
+    `);
+    w.document.close();
+
+    // After window loads, build QR + chart (if report), then print
+    w.onload = () => {
+      try {
+        if(type === "certificate"){
+          const qrBox = w.document.getElementById("qrCertBox");
+          const verifyUrl = `${window.location.origin}/results/{{ campaign.id }}/`;
+          if(qrBox && w.QRCode){
+            qrBox.innerHTML = "";
+            new w.QRCode(qrBox, { text: verifyUrl, width: 96, height: 96 });
+          }
+        }
+
+        if(type === "report"){
+          const tr = Array.from(w.document.querySelectorAll("#rpTable tbody tr"));
+          const votes = tr.map(r => parseInt(r.dataset.votes || "0", 10));
+          const names = tr.map(r => r.dataset.name);
+          const total = votes.reduce((a,b)=>a+b,0);
+
+          const tv = w.document.getElementById("rpTotalVotes");
+          if(tv) tv.innerText = total;
+
+          tr.forEach(r=>{
+            const v = parseInt(r.dataset.votes || "0", 10);
+            const pct = total ? ((v/total)*100).toFixed(1) : "0.0";
+            const cell = r.querySelector(".pct");
+            if(cell) cell.innerText = pct + "%";
+          });
+
+          const canvas = w.document.getElementById("rpPie");
+          if(canvas && w.Chart){
+            new w.Chart(canvas, {
+              type: "pie",
+              data: { labels: names, datasets: [{ data: votes }] },
+              options: { responsive: false, plugins: { legend: { position: "bottom" } } }
+            });
+          }
+        }
+      } catch (e){}
+
+      setTimeout(() => {
+        w.print();
+        w.close();
+      }, 500);
+    };
+
+    // load libs into print window
+    const s1 = w.document.createElement("script");
+    s1.src = "https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js";
+    w.document.body.appendChild(s1);
+
+    const s2 = w.document.createElement("script");
+    s2.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js";
+    w.document.body.appendChild(s2);
+  }
+</script>
+
+{% endif %}
+{% endblock %}

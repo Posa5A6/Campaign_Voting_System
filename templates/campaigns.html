@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Campaigns | Campaign Voting{% endblock %}
+
+{% block content %}
+<div class="campaigns-page">
+
+    <div class="campaigns-header">
+        <h2>Available Campaigns</h2>
+        <p>Select a campaign to view details and cast your vote</p>
+    </div>
+
+    <div id="campaignList" class="campaign-grid">
+        <div class="campaign-loading">
+            Loading campaigns...
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const CANDIDATES_URL_BASE = "/campaign/";
+</script>
+<script src="{% static 'js/campaigns.js' %}"></script>
+
+{% endblock %}
