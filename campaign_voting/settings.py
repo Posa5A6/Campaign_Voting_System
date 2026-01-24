@@ -163,34 +163,38 @@
 Django settings for campaign_voting project.
 Django 6.0
 """
-
-import os
 from pathlib import Path
+import os
 
+from dotenv import load_dotenv
+import dj_database_url
+
+# -------------------------
+# Paths
+# -------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# =========================
-# SECURITY
-# =========================
-# Railway/production: set SECRET_KEY in Railway Variables
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
+# Load .env locally (Render env vars will override)
+load_dotenv(BASE_DIR / ".env")
 
-# Railway/production: DEBUG must be 0
+# -------------------------
+# Security
+# -------------------------
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.environ.get("DEBUG", "0") == "1"
 
-ALLOWED_HOSTS = (
-    os.environ.get("ALLOWED_HOSTS", "").split(",")
-    if not DEBUG else ["*"]
-)
+# Render gives your domain like: xxx.onrender.com
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = (
-    os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if not DEBUG else []
-)
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
 
-# =========================
-# APPLICATIONS
-# =========================
+# -------------------------
+# Apps
+# -------------------------
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -198,15 +202,16 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+
     "voting",
 ]
 
-# =========================
-# MIDDLEWARE
-# =========================
+# -------------------------
+# Middleware
+# -------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # ✅ for static in production
+    "whitenoise.middleware.WhiteNoiseMiddleware",   # ✅ for Render static
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -215,11 +220,11 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# -------------------------
+# URLs / Templates
+# -------------------------
 ROOT_URLCONF = "campaign_voting.urls"
 
-# =========================
-# TEMPLATES
-# =========================
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -237,27 +242,32 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "campaign_voting.wsgi.application"
 
-# =========================
-# DATABASE (Railway MySQL)
-# =========================
-# Railway MySQL plugin gives these env vars automatically:
-# MYSQLHOST MYSQLUSER MYSQLPASSWORD MYSQLDATABASE MYSQLPORT
-# Locally you can keep your local MySQL by setting them in .env (optional)
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get("MYSQLDATABASE", "campaign_voting_db"),
-        "USER": os.environ.get("MYSQLUSER", "root"),
-        "PASSWORD": os.environ.get("MYSQLPASSWORD", ""),
-        "HOST": os.environ.get("MYSQLHOST", "localhost"),
-        "PORT": os.environ.get("MYSQLPORT", "3306"),
-        "OPTIONS": {"charset": "utf8mb4"},
-    }
-}
+# -------------------------
+# Database (Render PostgreSQL)
+# -------------------------
+# Render provides DATABASE_URL automatically if you attach the DB.
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-# =========================
-# PASSWORD VALIDATION
-# =========================
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
+else:
+    # ✅ Local fallback (use SQLite locally, simple)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
+# -------------------------
+# Password validation
+# -------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -265,37 +275,50 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# =========================
-# INTERNATIONALIZATION
-# =========================
+# -------------------------
+# Internationalization
+# -------------------------
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
 
-# =========================
-# STATIC FILES
-# =========================
+# -------------------------
+# Static files (Render)
+# -------------------------
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]          # your static folder
-STATIC_ROOT = BASE_DIR / "staticfiles"            # collected static for production
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# WhiteNoise optimized storage
+# Your local static folder
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Whitenoise optimized static serving
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# =========================
-# EMAIL (OTP) - use Railway Variables
-# =========================
+# -------------------------
+# Sessions / Login
+# -------------------------
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+LOGIN_URL = "/login/"
+
+# -------------------------
+# Email (OTP)
+# -------------------------
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "1") == "1"
 
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 
-# =========================
-# AUTH / SESSION
-# =========================
-LOGIN_URL = "/login/"
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# -------------------------
+# Production security suggestions (safe defaults)
+# -------------------------
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
