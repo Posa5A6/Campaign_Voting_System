@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: campaign-voting
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn campaign_voting.wsgi:application"
