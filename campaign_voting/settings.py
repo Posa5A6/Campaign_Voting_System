@@ -135,14 +135,17 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # Email (keep creds in Render env vars, NOT in code)
 # -------------------------
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "1") == "1"
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-EMAIL_TIMEOUT = 10
 
+EMAIL_HOST = "smtp-relay.brevo.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = os.environ.get("BREVO_SMTP_LOGIN", "")
+EMAIL_HOST_PASSWORD = os.environ.get("BREVO_SMTP_KEY", "")
+
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
+EMAIL_TIMEOUT = 10  # prevents hanging
 
 # -------------------------
 # Production security (Render)
