@@ -90,7 +90,7 @@ SMTP Error:
 ----------
 {str(e)}
 """,
-                settings.EMAIL_HOST_USER,
+                settings.DEFAULT_FROM_EMAIL,
                 [ADMIN_EMAIL],
                 fail_silently=True,
             )
