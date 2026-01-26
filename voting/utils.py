@@ -42,6 +42,7 @@ def send_otp_email(email: str, otp: str, user=None):
     except ValidationError:
         # Inform admin silently (optional)
         try:
+            print("EMAIL_HOST:", settings.EMAIL_HOST, "FROM:", settings.DEFAULT_FROM_EMAIL)
             send_mail(
                 "INVALID EMAIL FORMAT DETECTED",
                 (
@@ -64,6 +65,7 @@ def send_otp_email(email: str, otp: str, user=None):
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or settings.EMAIL_HOST_USER
 
     try:
+        print("EMAIL_HOST:", settings.EMAIL_HOST, "FROM:", settings.DEFAULT_FROM_EMAIL)
         send_mail(
             subject=subject,
             message=message,
@@ -80,6 +82,7 @@ def send_otp_email(email: str, otp: str, user=None):
 
         # Notify admin (optional, and must be silent to avoid loop)
         try:
+            print("EMAIL_HOST:", settings.EMAIL_HOST, "FROM:", settings.DEFAULT_FROM_EMAIL)
             send_mail(
                 "OTP EMAIL DELIVERY FAILED",
                 (
