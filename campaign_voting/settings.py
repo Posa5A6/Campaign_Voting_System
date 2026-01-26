@@ -143,10 +143,10 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get("BREVO_SMTP_LOGIN", "")
 EMAIL_HOST_PASSWORD = os.environ.get("BREVO_SMTP_KEY", "")
 
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
 
 EMAIL_TIMEOUT = 10  # prevents hanging
-
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 # -------------------------
 # Production security (Render)
 # -------------------------
