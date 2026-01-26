@@ -3,22 +3,21 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from smtplib import SMTPException
+from django.conf import settings
+from django.core.mail import send_mail
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 def generate_otp():
     return str(secrets.randbelow(900000) + 100000)
 
 
-from django.core.mail import send_mail
-from django.conf import settings
-from django.utils import timezone
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
 
-ADMIN_EMAIL = "narisnarendras6@gmail.com"
+ADMIN_EMAIL = "narisnarendras6@email.com"  # keep your existing value
 
 def send_otp_email(email, otp, user=None):
     subject = "Voting System - OTP Verification"
-
     message = f"""
 Hello,
 
@@ -34,27 +33,31 @@ Regards,
 Campaign Voting System
 """
 
-    # ✅ STEP 1: EMAIL FORMAT VALIDATION
+    # 1) Validate email format
     try:
         validate_email(email)
     except ValidationError:
-        send_mail(
-            "🚨 INVALID EMAIL FORMAT DETECTED",
-            f"""
+        # notify admin (but never block user flow)
+        try:
+            send_mail(
+                "🚨 INVALID EMAIL FORMAT DETECTED",
+                f"""
 User attempted to use an invalid email format.
 
-Username : {user.username if user else 'Unknown'}
-User ID  : {user.id if user else 'Unknown'}
+Username : {getattr(user, "username", "Unknown")}
+User ID  : {getattr(user, "id", "Unknown")}
 Email    : {email}
 Time     : {timezone.now()}
 """,
-            settings.EMAIL_HOST_USER,
-            [ADMIN_EMAIL],
-            fail_silently=True
-        )
-        raise Exception("Invalid email format")
+                settings.EMAIL_HOST_USER,
+                [ADMIN_EMAIL],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+        return False, "Invalid email format"
 
-    # ✅ STEP 2: TRY SMTP DELIVERY
+    # 2) Send OTP (never let it hang too long)
     try:
         send_mail(
             subject,
@@ -63,18 +66,20 @@ Time     : {timezone.now()}
             [email],
             fail_silently=False,
         )
+        return True, None
 
     except Exception as e:
-        # ❌ SMTP / NETWORK / AUTH FAILURE
-
-        admin_subject = "🚨 OTP EMAIL DELIVERY FAILED"
-        admin_message = f"""
+        # notify admin, but do NOT crash registration
+        try:
+            send_mail(
+                "🚨 OTP EMAIL DELIVERY FAILED",
+                f"""
 OTP email could not be delivered.
 
 User Details:
 -------------
-Username : {user.username if user else 'Unknown'}
-User ID  : {user.id if user else 'Unknown'}
+Username : {getattr(user, "username", "Unknown")}
+User ID  : {getattr(user, "id", "Unknown")}
 Attempted Email : {email}
 
 Time:
@@ -84,14 +89,12 @@ Time:
 SMTP Error:
 ----------
 {str(e)}
-"""
+""",
+                settings.EMAIL_HOST_USER,
+                [ADMIN_EMAIL],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
 
-        send_mail(
-            admin_subject,
-            admin_message,
-            settings.EMAIL_HOST_USER,
-            [ADMIN_EMAIL],
-            fail_silently=True,
-        )
-
-        raise Exception("OTP email delivery failed. Admin notified.")
+        return False, "OTP sending failed. Please try again later."
