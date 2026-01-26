@@ -1,105 +1,65 @@
+import os
 import secrets
+import requests
 import logging
-
-from django.conf import settings
-from django.core.mail import send_mail
+from django.utils import timezone
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-# ✅ Set your admin email correctly (your real email)
 ADMIN_EMAIL = "narisnarendras6@gmail.com"
 
-
 def generate_otp() -> str:
-    """Return 6-digit OTP as string."""
     return str(secrets.randbelow(900000) + 100000)
 
-
 def send_otp_email(email: str, otp: str, user=None):
-    """
-    Sends OTP email to user. Returns (True, None) on success.
-    Returns (False, "reason") on failure.
-    Never raises to avoid 500 errors in production.
-    """
-
-    subject = "Voting System - OTP Verification"
-    message = (
-        "Hello,\n\n"
-        "Your One-Time Password (OTP) is:\n\n"
-        f"{otp}\n\n"
-        "This OTP is valid for 5 minutes.\n\n"
-        "If you did not request this, please ignore this email.\n\n"
-        "Regards,\n"
-        "Campaign Voting System\n"
-    )
-
-    # 1) Validate email format
+    # validate email
     try:
         validate_email(email)
     except ValidationError:
-        # Inform admin silently (optional)
-        try:
-            print("EMAIL_HOST:", settings.EMAIL_HOST, "FROM:", settings.DEFAULT_FROM_EMAIL)
-            send_mail(
-                "INVALID EMAIL FORMAT DETECTED",
-                (
-                    "User attempted to use an invalid email format.\n\n"
-                    f"Username : {getattr(user, 'username', 'Unknown')}\n"
-                    f"User ID  : {getattr(user, 'id', 'Unknown')}\n"
-                    f"Email    : {email}\n"
-                    f"Time     : {timezone.now()}\n"
-                ),
-                settings.DEFAULT_FROM_EMAIL,
-                [ADMIN_EMAIL],
-                fail_silently=True,
-            )
-        except Exception:
-            pass
-
         return False, "Invalid email format"
 
-    # 2) Send OTP
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or settings.EMAIL_HOST_USER
+    api_key = os.environ.get("BREVO_API_KEY")
+    sender_email = os.environ.get("DEFAULT_FROM_EMAIL", ADMIN_EMAIL)
+    sender_name = os.environ.get("SENDER_NAME", "Campaign Voting System")
+
+    if not api_key:
+        logger.error("BREVO_API_KEY is missing")
+        return False, "Email service not configured"
+
+    subject = "Voting System - OTP Verification"
+    html_content = f"""
+    <p>Hello,</p>
+    <p>Your One-Time Password (OTP) is:</p>
+    <h2>{otp}</h2>
+    <p>This OTP is valid for <b>5 minutes</b>.</p>
+    <p>If you did not request this, please ignore this email.</p>
+    <p>Regards,<br/>Campaign Voting System</p>
+    """
+
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json",
+    }
+    payload = {
+        "sender": {"name": sender_name, "email": sender_email},
+        "to": [{"email": email}],
+        "subject": subject,
+        "htmlContent": html_content,
+    }
 
     try:
-        print("EMAIL_HOST:", settings.EMAIL_HOST, "FROM:", settings.DEFAULT_FROM_EMAIL)
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=from_email,   # ✅ important for Brevo (verified sender)
-            recipient_list=[email],
-            fail_silently=False,
-        )
-        logger.info("OTP email sent to %s at %s", email, timezone.now())
-        return True, None
+        r = requests.post(url, json=payload, headers=headers, timeout=15)
+        if r.status_code in (200, 201, 202):
+            logger.info("✅ OTP sent via Brevo API to %s at %s", email, timezone.now())
+            return True, None
+
+        logger.error("Brevo API failed: status=%s body=%s", r.status_code, r.text)
+        return False, "OTP sending failed (email provider error)"
 
     except Exception as e:
-        # Log the real error (so you can see it in Render logs)
-        logger.exception("OTP EMAIL FAILED for %s. Error=%r", email, e)
-
-        # Notify admin (optional, and must be silent to avoid loop)
-        try:
-            print("EMAIL_HOST:", settings.EMAIL_HOST, "FROM:", settings.DEFAULT_FROM_EMAIL)
-            send_mail(
-                "OTP EMAIL DELIVERY FAILED",
-                (
-                    "OTP email could not be delivered.\n\n"
-                    "User Details:\n"
-                    "-------------\n"
-                    f"Username : {getattr(user, 'username', 'Unknown')}\n"
-                    f"User ID  : {getattr(user, 'id', 'Unknown')}\n"
-                    f"Attempted Email : {email}\n\n"
-                    f"Time: {timezone.now()}\n\n"
-                    f"Error: {repr(e)}\n"
-                ),
-                from_email,
-                [ADMIN_EMAIL],
-                fail_silently=True,
-            )
-        except Exception:
-            pass
-
-        return False, "OTP sending failed. Please try again later."
+        logger.exception("Brevo API exception: %r", e)
+        return False, "OTP sending failed (network error)"
