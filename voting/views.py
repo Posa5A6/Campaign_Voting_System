@@ -67,7 +67,13 @@ def register(request):
 
             otp = generate_otp()
             EmailOTP.objects.create(user=user, otp=otp)
-            send_otp_email(email, otp)
+            ok, err = send_otp_email(email, otp, user=user)
+            if not ok:
+                # show message to user instead of 500
+                # example:
+                messages.error(request, err)
+                return redirect("register")
+
 
     except Exception:
         return HttpResponse("Registration failed. Please try again.")
