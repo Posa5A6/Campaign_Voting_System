@@ -156,3 +156,19 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
+
+
+#----------------------------------------------------
+#for creating super manaily
+
+import os
+from django.contrib.auth import get_user_model
+
+if os.environ.get("CREATE_SUPERUSER") == "True":
+    User = get_user_model()
+    if not User.objects.filter(username="admin").exists():
+        User.objects.create_superuser(
+            username="admin",
+            email="admin@gmail.com",
+            password="Admin@123"
+        )
