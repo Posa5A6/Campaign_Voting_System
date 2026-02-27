@@ -162,7 +162,7 @@ if not DEBUG:
 #for creating super manaily
 
 import os
-from django.contrib.auth import get_user_model
+from django.contrib.auth import User
 
 if os.environ.get("CREATE_SUPERUSER") == "True":
     User = get_user_model()
